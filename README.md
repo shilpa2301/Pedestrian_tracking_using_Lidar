@@ -11,6 +11,7 @@ TASK for Oct 17, 2023- All 3 of us are going to check the following and keep on 
 1. Launch
    a. https://docs.ros.org/en/humble/Tutorials/Intermediate/Launch/Launch-Main.html  - Managing Large project explains how to launch rviz from launch files to visualize
    b. https://design.ros2.org/articles/roslaunch.html 
-3. Bags
-4. Rviz2
+2. Bags
+   a. https://docs.ros.org/en/humble/Tutorials/Advanced/Recording-A-Bag-From-Your-Own-Node-Py.html (cant find reading from bag in python)
+3. Rviz2
    
