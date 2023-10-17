@@ -14,5 +14,6 @@ TASK for Oct 17, 2023- All 3 of us are going to check the following and keep on 
 2. Bags
    a. https://docs.ros.org/en/humble/Tutorials/Advanced/Recording-A-Bag-From-Your-Own-Node-Py.html - writing to bag
    b. https://mcap.dev/guides/python/ros2 - Reading and writing from bags
-4. Rviz2
+3. Rviz2
+   a. https://www.youtube.com/watch?v=yNd-ZqWKsBc - rviz2 but with gazebo. We can filter out thr rviz2 portions
    
