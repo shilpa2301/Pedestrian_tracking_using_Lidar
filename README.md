@@ -62,8 +62,8 @@ Follow these steps to visualize data from a ROS 2 bag file using RViz2:
 
 7. In the RViz2 interface, you can also reset the time to synchronize the time? I don't know exactly how it goes.
 
-### Data Type Descriptions given in the Bag files:
-# ros2 interface show tf2_msgs/msg/TFMessage
+## Data Type Descriptions given in the Bag files:
+### ros2 interface show tf2_msgs/msg/TFMessage
 geometry_msgs/TransformStamped[] transforms
 	#
 	#
@@ -84,12 +84,8 @@ geometry_msgs/TransformStamped[] transforms
 			float64 z 0
 			float64 w 1
    
-# ros2 interface show sensor_msgs/msg/LaserScan
-# Single scan from a planar laser range-finder
-#
-# If you have another ranging device with different behavior (e.g. a sonar
-# array), please find or create a different message, since applications
-# will make fairly laser-specific assumptions about this data
+### ros2 interface show sensor_msgs/msg/LaserScan
+### Single scan from a planar laser range-finder. If you have another ranging device with different behavior (e.g. a sonar array), please find or create a different message, since applications will make fairly laser-specific assumptions about this data
 
 std_msgs/Header header # timestamp in the header is the acquisition time of
 	builtin_interfaces/Time stamp
