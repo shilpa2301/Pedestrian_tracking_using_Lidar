@@ -59,4 +59,4 @@ Follow these steps to visualize data from a ROS 2 bag file using RViz2:
 
    ros2 bag play example9.db3
 
-7. In the RViz2 interface, you can also reset the time to start visualizing data from the beginning.
+7. In the RViz2 interface, you can also reset the time to synchronize the time? I don't know exactly how it goes.
