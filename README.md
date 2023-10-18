@@ -27,40 +27,36 @@ Follow these steps to visualize data from a ROS 2 bag file using RViz2:
 
    ```bash
    cd /path/to/your/bag/folder
+   source /opt/ros/humble/setup.bash
 
-    Source your ROS 2 workspace setup:
+2. Launch RViz2:
 
-    bash
+   ```bash
+   ros2 run rviz2 rviz2
 
-source /opt/ros/humble/setup.bash
+3. In the RViz2 interface:
 
-Launch RViz2:
+   ```bash
+   Open the "Global Status" panel.
+   Set the "Fixed frame" to "world."
 
-bash
+4. Add a LaserScan display:
 
-ros2 run rviz2 rviz2
+   ```bash
+   Click "Add" in the RViz2 interface.
+   Select "LaserScan."
+   Specify the "Topic" as /scan.
 
-In the RViz2 interface:
+5. Open a new terminal in the same folder:
 
-    Open the "Global Status" panel.
-    Set the "Fixed frame" to "world."
+   ```bash
 
-Add a LaserScan display:
+   source /opt/ros/humble/setup.bash
 
-    Click "Add" in the RViz2 interface.
-    Select "LaserScan."
-    Specify the "Topic" as /scan.
+6. Play your ROS 2 bag file using the ros2 bag play command. Replace example9.db3 with the actual name of your bag file:
 
-Open a new terminal in the same folder:
+   ```bash
 
-bash
+   ros2 bag play example9.db3
 
-source /opt/ros/humble/setup.bash
-
-Play your ROS 2 bag file using the ros2 bag play command. Replace example9.db3 with the actual name of your bag file:
-
-bash
-
-    ros2 bag play example9.db3
-
-    In the RViz2 interface, you can also reset the time to start visualizing data from the beginning.
+7. In the RViz2 interface, you can also reset the time to start visualizing data from the beginning.
