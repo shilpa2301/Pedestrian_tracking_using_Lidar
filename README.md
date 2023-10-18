@@ -19,23 +19,48 @@ TASK for Oct 17, 2023- All 3 of us are going to check the following and keep on 
    a. https://www.youtube.com/watch?v=yNd-ZqWKsBc - rviz2 but with gazebo. We can filter out the rviz2 portions -LOL watched the same one
 
 
-How to plot bag data
+## Visualizing ROS 2 Bag Data Using RViz2
 
-cd /your bag folder/
+Follow these steps to visualize data from a ROS 2 bag file using RViz2:
+
+1. Change to the directory where your ROS 2 bag file is located:
+
+   ```bash
+   cd /path/to/your/bag/folder
+
+    Source your ROS 2 workspace setup:
+
+    bash
 
 source /opt/ros/humble/setup.bash
+
+Launch RViz2:
+
+bash
 
 ros2 run rviz2 rviz2
 
+In the RViz2 interface:
 
-Change Global Status -> Fixed frame -> world
-Add -> LaserScan -> Topic -> /scan
+    Open the "Global Status" panel.
+    Set the "Fixed frame" to "world."
 
-Open a new terminal /probably same folder/
+Add a LaserScan display:
+
+    Click "Add" in the RViz2 interface.
+    Select "LaserScan."
+    Specify the "Topic" as /scan.
+
+Open a new terminal in the same folder:
+
+bash
 
 source /opt/ros/humble/setup.bash
 
-ros2 bag play example9.db3
+Play your ROS 2 bag file using the ros2 bag play command. Replace example9.db3 with the actual name of your bag file:
 
+bash
 
-reset Time (at the bottom of rviz2)
+    ros2 bag play example9.db3
+
+    In the RViz2 interface, you can also reset the time to start visualizing data from the beginning.
