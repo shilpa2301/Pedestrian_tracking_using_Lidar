@@ -22,7 +22,9 @@ TASK for Oct 17, 2023- All 3 of us are going to check the following and keep on 
 How to plot bag data
 
 cd /your bag folder/
+
 source /opt/ros/humble/setup.bash
+
 ros2 run rviz2 rviz2
 
 
@@ -30,7 +32,9 @@ Change Global Status -> Fixed frame -> world
 Add -> LaserScan -> Topic -> /scan
 
 Open a new terminal /probably same folder/
+
 source /opt/ros/humble/setup.bash
+
 ros2 bag play example9.db3
 
 
