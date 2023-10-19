@@ -20,7 +20,7 @@ TASK for Oct 17, 2023- All 3 of us are going to check the following and keep on 
 
 
 ## Visualizing ROS 2 Bag Data Using RViz2
-[Rviz2_visualization](.rviz2_visualize.md)
+[Rviz2_visualization](rviz2_visualize.md)
 
 ## Data Type Descriptions given in the Bag files:
 ### ros2 interface show tf2_msgs/msg/TFMessage
