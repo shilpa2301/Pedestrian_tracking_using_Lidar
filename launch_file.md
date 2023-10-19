@@ -25,7 +25,7 @@ Follow these steps to build a launch file
        arg_bag_in = DeclareLaunchArgument('bag_in', default_value='[your_folder]/example9.db3', description='Input bag file path')
        
        # Declare launch argument 'bag_out'
-       arg_bag_out = DeclareLaunchArgument('bag_out', default_value='[change_it_to_your_folder]/example10.db3', description='Output bag file path')
+       arg_bag_out = DeclareLaunchArgument('bag_out', default_value='[change_it_to_your_folder]', description='Output bag file path')
        
    
        
@@ -53,7 +53,7 @@ Follow these steps to build a launch file
    
        # Register the event handler
        terminate_at_end = RegisterEventHandler(event_handler)
-       ld = LaunchDescription([ arg_bag_in,arg_bag_out,bag_play,node, bag_record,terminate_at_end])
+       ld = LaunchDescription([ arg_bag_in,arg_bag_out,bag_play,bag_record,node,terminate_at_end])
        return  ld
    
 
