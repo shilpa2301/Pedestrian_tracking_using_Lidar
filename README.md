@@ -20,11 +20,90 @@ TASK for Oct 17, 2023- All 3 of us are going to check the following and keep on 
 
 
 ## Visualizing ROS 2 Bag Data Using RViz2
-[Rviz2_visualization](rviz2_visualize.md)
+<details>
+    <summary>Rviz2_visualization</summary>
+
+Follow these steps to visualize data from a ROS 2 bag file using RViz2:
+
+1. Change to the directory where your ROS 2 bag file is located:
+
+   ```bash
+   cd /path/to/your/bag/folder
+   source /opt/ros/humble/setup.bash
+
+2. Launch RViz2:
+
+   ```bash
+   ros2 run rviz2 rviz2
+
+3. In the RViz2 interface:
+
+   ```bash
+   Open the "Global Options" panel.
+   Set the "Fixed frame" to "laser."
+
+4. Add a LaserScan display:
+
+   ```bash
+   Click "Add" in the RViz2 interface.
+   Select "LaserScan."
+   Specify the "Topic" as /scan.
+
+5. Open a new terminal in the same folder:
+
+   ```bash
+
+   source /opt/ros/humble/setup.bash
+
+6. Play your ROS 2 bag file using the ros2 bag play command. Replace example9.db3 with the actual name of your bag file:
+
+   ```bash
+
+
+   while true; do ros2 bag play example9.db3 ; done
+
+7. In the RViz2 interface, you can also reset the time to synchronize the time? I don't know exactly how it goes.
+
+<!-- summary 아래 한칸 공백 두고 내용 삽입 -->
+
+</details>
 
 ## How to setup a launch file
-[Launch_file_setup](launch_file.md)
+<details>
+    <summary>Setup Launch file</summary>
 
+Follow these steps to build a launch file
+
+1. Change to the directory where your ROS 2 package file is located:
+
+   ```bash
+   cd /ros-folder/src/package_name
+   mkdir launch
+   touch launch_.py
+  (should not be the same as 'launch' library)
+
+2. Use the launch_.py in the files
+3. Change the setup.py
+
+   ```bash
+   data_files=[
+    ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
+    ('share/' + package_name, ['package.xml']),
+    ('share/' + package_name, glob.glob('launch/*'))
+   ],
+
+4. Colcon build on src folder
+
+   ```bash
+   colcon build
+
+5. Launch the launch file (you can check it on Rviz2)
+
+   ```bash
+   ros2 launch project_3 launch_.py bag_in:=[your_folder]/example9.db3 bag_out:=[your_estimated_new_folder]
+<!-- summary 아래 한칸 공백 두고 내용 삽입 -->
+
+</details>
 ## Data Type Descriptions given in the Bag files:
 ### ros2 interface show tf2_msgs/msg/TFMessage
 geometry_msgs/TransformStamped[] transforms
