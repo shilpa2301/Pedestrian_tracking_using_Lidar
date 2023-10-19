@@ -25,7 +25,7 @@ Follow these steps to build a launch file
        arg_bag_in = DeclareLaunchArgument('bag_in', default_value='[your_folder]/example9.db3', description='Input bag file path')
        
        # Declare launch argument 'bag_out'
-       arg_bag_out = DeclareLaunchArgument('bag_out', default_value='[change_it_to_your_folder]', description='Output bag file path')
+       arg_bag_out = DeclareLaunchArgument('bag_out', default_value='[change_it_to_your_expected_new_folder]', description='Output bag file path')
        
    
        
