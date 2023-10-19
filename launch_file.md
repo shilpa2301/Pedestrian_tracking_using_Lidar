@@ -75,4 +75,4 @@ Follow these steps to build a launch file
 4. Launch the launch file (you can check it on Rviz2)
 
    ```bash
-   ros2 launch project_3 launch_.py bag_in:=[your_folder]/example9.db3
+   ros2 launch project_3 launch_.py bag_in:=[your_folder]/example9.db3 bag_out:=[your_estimated_new_folder]
