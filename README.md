@@ -37,8 +37,8 @@ Follow these steps to visualize data from a ROS 2 bag file using RViz2:
 3. In the RViz2 interface:
 
    ```bash
-   Open the "Global Status" panel.
-   Set the "Fixed frame" to "world."
+   Open the "Global Options" panel.
+   Set the "Fixed frame" to "laser."
 
 4. Add a LaserScan display:
 
