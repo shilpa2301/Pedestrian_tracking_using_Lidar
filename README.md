@@ -111,6 +111,31 @@ float32 range_min            # minimum range value [m]
 float32 range_max            # maximum range value [m]
 
 float32[] ranges             # range data [m]
+
+## Published Topics
+ros2 interface show sensor_msgs/msg/PointCloud
+### This message holds a collection of 3d points, plus optional additional information about each point.
+
+### Time of sensor data acquisition, coordinate frame ID.
+std_msgs/Header header
+	builtin_interfaces/Time stamp
+		int32 sec
+		uint32 nanosec
+	string frame_id
+
+### Array of 3d points. Each Point32 should be interpreted as a 3d point in the frame given in the header.
+geometry_msgs/Point32[] points
+	#
+	#
+	float32 x
+	float32 y
+	float32 z
+
+### Each channel should have the same number of elements as points array,and the data in each channel should correspond 1:1 with each point. Channel names in common practice are listed in ChannelFloat32.msg.
+ChannelFloat32[] channels
+	#
+	string name
+
                              # (Note: values < range_min or > range_max should be discarded)
 float32[] intensities        # intensity data [device-specific units].  If your
                              # device does not provide intensities, please leave
