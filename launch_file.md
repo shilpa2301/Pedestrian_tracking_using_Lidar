@@ -5,7 +5,8 @@ Follow these steps to build a launch file
    ```bash
    cd /ros-folder/src/package_name
    mkdir launch
-   touch launch_.py (should not be the same as 'launch' library)
+   touch launch_.py
+(should not be the same as 'launch' library)
 
 2. launch_.py
    ```bash
