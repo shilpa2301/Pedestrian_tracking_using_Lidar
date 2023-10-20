@@ -25,13 +25,13 @@ def generate_launch_description():
     
     node_1 = Node(
         package='project_3',
-        executable='do_it',
+        executable='<your_command>',
         name='LaserScanNode',
         output='screen',
     )
     node_2 = Node(
         package='project_3',
-        executable='do_it_2',
+        executable='<your_command_2>',
         name='PointCloudNode',
         output='screen',
     )
