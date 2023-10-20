@@ -10,13 +10,29 @@ from example_interfaces.msg import Int64
 class Human_Detection( Node):
     def __init__(self,node_name):
         super().__init__(node_name)
-        self.laser_scan_subscriber = self.create_subscription(LaserScan, 'scan', self.laser_scan_callback, 10)
-        self.point_cloud_publisher = self.create_publisher(PointCloud, 'point_cloud', 10)
+        self.laser_scan_subscriber = self.create_subscription(LaserScan, '/scan', self.laser_scan_callback, 10)
+        self.point_cloud_publisher = self.create_publisher(PointCloud, '/point_cloud', 10)
+
+        #self.laser_scan_subscriber = self.create_subscription(LaserScan, '/scan', self.laser_scan_callback, 10)
+        self.location_publisher = self.create_publisher(PointCloud, '/location', 10)
+        self.tracking_publisher = self.create_publisher(PointCloud, '/tracking', 10)
+
+        self.location_subscriber = self.create_subscription(PointCloud, '/location', self.location_callback, 10)
+        self.tracking_subscriber = self.create_subscription(PointCloud, '/tracking', self.tracking_callback, 10)
+        self.person_location_publisher = self.create_publisher(PointCloud, '/person_locations', 10)
+        self.person_count_publisher = self.create_publisher(Int64, '/person_count', 10)
 
     def laser_scan_callback(self, scan):
         point_cloud_msg = self.laser_scan_to_point_cloud(scan)
         self.point_cloud_publisher.publish(point_cloud_msg)
         print("published_data=", point_cloud_msg)
+    
+    def location_callback(self, location):
+        self.get_logger().info('I heard: "%s"' % location.data)
+    
+    def tracking_callback(self, tracking):
+        self.get_logger().info('I heard: "%s"' % tracking.data)
+
 
     def laser_scan_to_point_cloud(self, scan):
         point_cloud_data = []
