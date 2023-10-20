@@ -23,13 +23,18 @@ def generate_launch_description():
         output='screen',
     )
     
-    node = Node(
+    node_1 = Node(
         package='project_3',
         executable='do_it',
-        name='LaserScanToPointCloudNode',
+        name='LaserScanNode',
         output='screen',
     )
-
+    node_2 = Node(
+        package='project_3',
+        executable='do_it_2',
+        name='PointCloudNode',
+        output='screen',
+    )
     # Execute an additional process (ros2 bag record) using ExecuteProcess
     bag_record = ExecuteProcess(
         cmd=['ros2', 'bag', 'record', '-o', arg_out_value,'topic_name', '/point_cloud'],
@@ -37,11 +42,10 @@ def generate_launch_description():
     )
 
     # Define an event handler that initiates an overall shutdown when 'node' exits
-    event_handler = OnProcessExit(target_action=node, on_exit=[EmitEvent(event=Shutdown())])
+    event_handler = OnProcessExit(target_action=bag_play, on_exit=[EmitEvent(event=Shutdown())])
 
     # Register the event handler
     terminate_at_end = RegisterEventHandler(event_handler)
-    ld = LaunchDescription([ arg_bag_in,arg_bag_out,bag_play,bag_record,node,terminate_at_end])
+    ld = LaunchDescription([ arg_bag_in,arg_bag_out,bag_play,bag_record,node_1,node_2,terminate_at_end])
     return  ld
-
 
