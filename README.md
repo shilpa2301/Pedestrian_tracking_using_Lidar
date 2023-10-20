@@ -92,6 +92,13 @@ Follow these steps to build a launch file
     ('share/' + package_name, glob.glob('launch/*'))
    ],
 
+   entry_points={
+        'console_scripts': [
+             'your_command = project_3.your_python_file_name:main',
+             'your_command_2 = project_3.your_python_file_name:main_2'
+        ],
+    },
+
 4. Colcon build on src folder
 
    ```bash
