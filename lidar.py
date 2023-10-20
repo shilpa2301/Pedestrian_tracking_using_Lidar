@@ -5,13 +5,19 @@ from geometry_msgs.msg import Point32
 
 import math
 
-class LaserScanToPointCloudNode(Node):
+class LaserScanNode(Node):
 
     def __init__(self):
-        super().__init__('laser_scan_to_point_cloud_node')
+        super().__init__('laser_scan_node')
         self.laser_scan_subscriber = self.create_subscription(LaserScan, 'scan', self.laser_scan_callback, 10)
-        self.point_cloud_publisher = self.create_publisher(PointCloud, 'point_cloud', 10)
+        
 
+
+class PointCloudNode(Node):
+    def __init__(self):
+        super().__init__('Point_cloud_node')
+        self.point_cloud_publisher = self.create_publisher(PointCloud, 'point_cloud', 10)
+    
     def laser_scan_callback(self, scan):
         point_cloud_msg = self.laser_scan_to_point_cloud(scan)
         self.point_cloud_publisher.publish(point_cloud_msg)
@@ -35,14 +41,21 @@ class LaserScanToPointCloudNode(Node):
         point_cloud_msg.header = scan.header
         point_cloud_msg.points = point_cloud_data
 
-        return point_cloud_msg
-
+        return point_cloud_msg    
+        
+    
 def main(args=None):
     rclpy.init(args=args)
-    node = LaserScanToPointCloudNode()
+    node = LaserScanNode()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
 
-if __name__ == '__main__':
-    main()
+def main_2(args=None):
+    rclpy.init(args=args)
+    node_2=PointCloudNode()
+    rclpy.spin(node_2)
+    node_2.destroy_node()
+    rclpy.shutdown()
+# if __name__ == '__main__':
+#     main()
