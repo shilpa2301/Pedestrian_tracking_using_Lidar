@@ -47,38 +47,34 @@ class LaserScanNode(Node):
 
         return point_cloud_msg
     def process_data(self, point_cloud_msg):
-        data_dummy=[]
-        data_cloud=[]
+        data=[]
+
         for i in range(len(point_cloud_msg.points)):
-            data_dummy.append([point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z])
-        tree = KDTree(data_dummy)
-        neighbors = tree.query_radius(data_dummy, r = 1.0)
+            data.append([point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z])
+        tree = KDTree(data)
+        neighbors = tree.query_radius(data, r = 1.0)
         centroids=[]
         x=0.0
         y=0.0
         z=0.0
-        centroids_Point=Point32()
+
         if len(centroids)==0:
             for i in range(len(neighbors[0])):
-                x+=data_dummy[neighbors[0][i]][0]
-                y+=data_dummy[neighbors[0][i]][1]
-                z+=data_dummy[neighbors[0][i]][2]
+                x+=data[neighbors[0][i]][0]
+                y+=data[neighbors[0][i]][1]
+                z+=data[neighbors[0][i]][2]
             value_list=[x/len(neighbors[0]), y/len(neighbors[0]), z/len(neighbors[0])]
             centroids.append(value_list)
-            centroids_Point.x=value_list[0]
-            centroids_Point.y=value_list[1]
-            centroids_Point.z=value_list[2]
-            
-            data_cloud.append(centroids_Point)
+
                 
         for n in range(1,len(neighbors)):
             x=0.0
             y=0.0
             z=0.0
             for i in range(len(neighbors[n])):
-                x+=data_dummy[neighbors[n][i]][0]
-                y+=data_dummy[neighbors[n][i]][1]
-                z+=data_dummy[neighbors[n][i]][2]
+                x+=data[neighbors[n][i]][0]
+                y+=data[neighbors[n][i]][1]
+                z+=data[neighbors[n][i]][2]
             centre = [x/len(neighbors[n]), y/len(neighbors[n]), z/len(neighbors[n])]
             #centroids.append([x/len(neighbors[n]), y/len(neighbors[n]), z/len(neighbors[n])])
             least_dist = float('inf')
@@ -94,16 +90,17 @@ class LaserScanNode(Node):
                 mean_y = (centre[1] + centroids[least_dist_id][1]) /2.0
                 mean_z = (centre[2] + centroids[least_dist_id][2]) /2.0
                 centroids[least_dist_id] = [mean_x, mean_y, mean_z]
-                centroids_Point.x=mean_x
-                centroids_Point.y=mean_y
-                centroids_Point.z=mean_z
+
             else:    
                 centroids.append(centre)
-                centroids_Point.x=centre[0]
-                centroids_Point.y=centre[1]
-                centroids_Point.z=centre[2]
-                data_cloud.append(centroids_Point)
-        data_cloud.append(centroids_Point)
+        data_cloud=[]
+        
+        for cen in centroids:
+            centroids_Point=Point32()
+            centroids_Point.x=cen[0]
+            centroids_Point.y=cen[1]
+            centroids_Point.z=cen[2] 
+            data_cloud.append(centroids_Point)   
         centroids.clear()
         #print("num_neighbours= ", num_neighbors)
         point_cloud_msg_ = PointCloud()
