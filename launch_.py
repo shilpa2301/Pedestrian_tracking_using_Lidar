@@ -10,10 +10,10 @@ def generate_launch_description():
     # Declare launch argument 'bag_in'
     arg_in_value = LaunchConfiguration('bag_in')
     arg_out_value=LaunchConfiguration('bag_out')
-    arg_bag_in = DeclareLaunchArgument('bag_in', default_value='[your_folder]/example9.db3', description='Input bag file path')
+    arg_bag_in = DeclareLaunchArgument('bag_in', default_value='/home/john2204/ros2_ws/bags/example9/example9.db3', description='Input bag file path')
     
     # Declare launch argument 'bag_out'
-    arg_bag_out = DeclareLaunchArgument('bag_out', default_value='[change_it_to_your_expected_new_folder]', description='Output bag file path')
+    arg_bag_out = DeclareLaunchArgument('bag_out', default_value='/home/john2204/ros2_ws/bags/example9/example', description='Output bag file path')
     
 
     
@@ -25,21 +25,26 @@ def generate_launch_description():
     
     node_1 = Node(
         package='project_3',
-        executable='<your_command>',
+        executable='do_it',
         name='LaserScanNode',
         output='screen',
     )
     node_2 = Node(
         package='project_3',
-        executable='<your_command_2>',
+        executable='do_it_2',
         name='PointCloudNode',
         output='screen',
     )
     # Execute an additional process (ros2 bag record) using ExecuteProcess
     bag_record = ExecuteProcess(
-        cmd=['ros2', 'bag', 'record', '-o', arg_out_value],
+        cmd=['ros2', 'bag', 'record', '/point_cloud','people_number','-o', arg_out_value],
         output='screen',
     )
+    #if you want to add /intermediate_point_cloud
+    #cmd=['ros2', 'bag', 'record', '-o', arg_out_value, '/intermediate_point_cloud','/point_cloud'],
+    
+    # -a -> all
+    # after arg_out_value -> add topics which to record
 
     # Define an event handler that initiates an overall shutdown when 'node' exits
     event_handler = OnProcessExit(target_action=bag_play, on_exit=[EmitEvent(event=Shutdown())])
@@ -48,4 +53,3 @@ def generate_launch_description():
     terminate_at_end = RegisterEventHandler(event_handler)
     ld = LaunchDescription([ arg_bag_in,arg_bag_out,bag_play,bag_record,node_1,node_2,terminate_at_end])
     return  ld
-
