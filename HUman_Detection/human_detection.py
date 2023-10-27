@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.neighbors import KDTree
 import time
 
+THRESHOLD_CENTROIDS =  1.0
 
 class Human_Detection( Node):
     def __init__(self,node_name):
@@ -62,6 +63,7 @@ class Human_Detection( Node):
         return point_cloud_msg
 
     def process_data(self, point_cloud_msg):
+
         data=[]
         print("before removing=",len(point_cloud_msg.points))
         for i in range(len(point_cloud_msg.points)):
@@ -74,10 +76,49 @@ class Human_Detection( Node):
                 data.append([point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z])
         #print("data=",data)
         print("length of data=", len(data))
-        time.sleep(2)
+        
         tree = KDTree(data)
-        num_neighbors = tree.query_radius(data, r = 1.0)
-        print("num_neighbours= ", num_neighbors)
+        neighbors = tree.query_radius(data, r = 1.0)
+        #print("neighbors= ", neighbors)
+        #print("size of neighbor_count = ", len(neighbors))
+        centroids=[]
+        x=0.0
+        y=0.0
+        z=0.0
+
+        if len(centroids)==0:
+            for i in range(len(neighbors[0])):
+                x+=data[neighbors[0][i]][0]
+                y+=data[neighbors[0][i]][1]
+                z+=data[neighbors[0][i]][2]
+            centroids.append([x/len(neighbors[0]), y/len(neighbors[0]), z/len(neighbors[0])])
+        
+        for n in range(1,len(neighbors)):
+            for i in range(len(neighbors[n])):
+                x+=data[neighbors[n][i]][0]
+                y+=data[neighbors[n][i]][1]
+                z+=data[neighbors[n][i]][2]
+            centre = [x/len(neighbors[n]), y/len(neighbors[n]), z/len(neighbors[n])]
+            #centroids.append([x/len(neighbors[n]), y/len(neighbors[n]), z/len(neighbors[n])])
+            least_dist = float('inf')
+            least_dist_id = -1
+            for c in range(len(centroids)):
+                euc_dist = np.sqrt((centre[0]-centroids[c][0])**2 + (centre[1]-centroids[c][1])**2 + (centre[2]-centroids[c][2])**2)
+                if euc_dist < least_dist:
+                    least_dist = euc_dist
+                    least_dist_id=c
+            print ("least_dist=", least_dist)
+            if euc_dist <= THRESHOLD_CENTROIDS:
+                mean_x = (centre[0] + centroids[least_dist_id][0]) /2.0
+                mean_y = (centre[1] + centroids[least_dist_id][1]) /2.0
+                mean_z = (centre[2] + centroids[least_dist_id][2]) /2.0
+            else:    
+                centroids.append(centre)
+
+        print("centroids length=", len(centroids))
+        centroids.clear()
+
+        time.sleep(2)
      
 
 
