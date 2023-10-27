@@ -18,9 +18,9 @@ class LaserScanNode(Node):
 
     def laser_scan_callback(self, scan):
         intermediate_msg = self.laser_scan_to_intermediate(scan)
-        processed_msg=self.process_data(intermediate_msg[0])
+        processed_msg=self.process_data(intermediate_msg)
         self.centroid_publisher.publish(processed_msg)
-        self.intermediate_publisher.publish(intermediate_msg[1])
+        self.intermediate_publisher.publish(intermediate_msg)
 
     def laser_scan_to_intermediate(self, scan):
         point_cloud_data = []
@@ -44,10 +44,8 @@ class LaserScanNode(Node):
         point_cloud_msg = PointCloud()
         point_cloud_msg.header = scan.header
         point_cloud_msg.points = point_cloud_data
-        point_original_msg= PointCloud()
-        point_original_msg.header=scan.header
-        point_original_msg.points=point_original
-        return point_cloud_msg,point_original_msg
+
+        return point_cloud_msg
     def process_data(self, point_cloud_msg):
         data_dummy=[]
         data_cloud=[]
@@ -96,11 +94,16 @@ class LaserScanNode(Node):
                 mean_y = (centre[1] + centroids[least_dist_id][1]) /2.0
                 mean_z = (centre[2] + centroids[least_dist_id][2]) /2.0
                 centroids[least_dist_id] = [mean_x, mean_y, mean_z]
+                centroids_Point.x=mean_x
+                centroids_Point.y=mean_y
+                centroids_Point.z=mean_z
             else:    
                 centroids.append(centre)
                 centroids_Point.x=centre[0]
                 centroids_Point.y=centre[1]
                 centroids_Point.z=centre[2]
+                data_cloud.append(centroids_Point)
+        data_cloud.append(centroids_Point)
         centroids.clear()
         #print("num_neighbours= ", num_neighbors)
         point_cloud_msg_ = PointCloud()
