@@ -14,14 +14,17 @@ class LaserScanNode(Node):
         super().__init__('laser_scan_node')
         self.laser_scan_subscriber = self.create_subscription(LaserScan, 'scan', self.laser_scan_callback, 10)
         self.intermediate_publisher = self.create_publisher(PointCloud, 'intermediate_point_cloud', 10)
+        self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 10)
 
     def laser_scan_callback(self, scan):
         intermediate_msg = self.laser_scan_to_intermediate(scan)
-        processed_msg=self.process_data(intermediate_msg)
-        self.intermediate_publisher.publish(processed_msg)
+        processed_msg=self.process_data(intermediate_msg[0])
+        self.centroid_publisher.publish(processed_msg)
+        self.intermediate_publisher.publish(intermediate_msg[1])
 
     def laser_scan_to_intermediate(self, scan):
         point_cloud_data = []
+        point_original=[]
         for i in range(len(scan.ranges)):
         
             angle = scan.angle_min + i * scan.angle_increment
@@ -37,12 +40,14 @@ class LaserScanNode(Node):
             and (point32.y!=float('inf') and point32.y!=float('-inf') and np.isnan(point32.y)==False) \
             and point32.z!=float('inf') and point32.z!=float('-inf') and np.isnan(point32.z)==False) :
                 point_cloud_data.append(point32)
-
+            point_original.append(point32)
         point_cloud_msg = PointCloud()
         point_cloud_msg.header = scan.header
         point_cloud_msg.points = point_cloud_data
-
-        return point_cloud_msg
+        point_original_msg= PointCloud()
+        point_original_msg.header=scan.header
+        point_original_msg.points=point_original
+        return point_cloud_msg,point_original_msg
     def process_data(self, point_cloud_msg):
         data_dummy=[]
         data_cloud=[]
