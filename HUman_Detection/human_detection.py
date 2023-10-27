@@ -74,8 +74,9 @@ class Human_Detection( Node):
             
                 # print([point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z])
                 data.append([point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z])
-        #print("data=",data)
+        print("data=",data)
         print("length of data=", len(data))
+        time.sleep(2)
         
         tree = KDTree(data)
         neighbors = tree.query_radius(data, r = 1.0)
@@ -93,7 +94,12 @@ class Human_Detection( Node):
                 z+=data[neighbors[0][i]][2]
             centroids.append([x/len(neighbors[0]), y/len(neighbors[0]), z/len(neighbors[0])])
         
+        
         for n in range(1,len(neighbors)):
+            x=0.0
+            y=0.0
+            z=0.0
+
             for i in range(len(neighbors[n])):
                 x+=data[neighbors[n][i]][0]
                 y+=data[neighbors[n][i]][1]
@@ -107,15 +113,17 @@ class Human_Detection( Node):
                 if euc_dist < least_dist:
                     least_dist = euc_dist
                     least_dist_id=c
-            print ("least_dist=", least_dist)
+            #print ("least_dist=", least_dist)
             if euc_dist <= THRESHOLD_CENTROIDS:
                 mean_x = (centre[0] + centroids[least_dist_id][0]) /2.0
                 mean_y = (centre[1] + centroids[least_dist_id][1]) /2.0
                 mean_z = (centre[2] + centroids[least_dist_id][2]) /2.0
+                centroids[least_dist_id] = [mean_x, mean_y, mean_z]
             else:    
                 centroids.append(centre)
 
         print("centroids length=", len(centroids))
+        
         centroids.clear()
 
         time.sleep(2)
