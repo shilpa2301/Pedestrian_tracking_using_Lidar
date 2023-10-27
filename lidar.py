@@ -7,6 +7,7 @@ import numpy as np
 
 import math
 from sklearn.neighbors import KDTree
+THRESHOLD_CENTROIDS =  1.0
 class LaserScanNode(Node):
 
     def __init__(self):
@@ -16,8 +17,8 @@ class LaserScanNode(Node):
 
     def laser_scan_callback(self, scan):
         intermediate_msg = self.laser_scan_to_intermediate(scan)
-        #processed_msg=self.process_data(intermediate_msg)
-        self.intermediate_publisher.publish(intermediate_msg)
+        processed_msg=self.process_data(intermediate_msg)
+        self.intermediate_publisher.publish(processed_msg)
 
     def laser_scan_to_intermediate(self, scan):
         point_cloud_data = []
@@ -43,31 +44,64 @@ class LaserScanNode(Node):
 
         return point_cloud_msg
     def process_data(self, point_cloud_msg):
-        data_cloud=[]
         data_dummy=[]
-        #print("before removing=",len(point_cloud_msg.points))
+        data_cloud=[]
         for i in range(len(point_cloud_msg.points)):
-            #print("i-th data= ",point_cloud_msg.points[i].x,',',point_cloud_msg.points[i].y)
-            if ((point_cloud_msg.points[i].x!=float('inf') and point_cloud_msg.points[i].x!=float('-inf') and np.isnan(point_cloud_msg.points[i].x)==False) \
-            and (point_cloud_msg.points[i].y!=float('inf') and point_cloud_msg.points[i].y!=float('-inf') and np.isnan(point_cloud_msg.points[i].y)==False) \
-            and point_cloud_msg.points[i].z!=float('inf') and point_cloud_msg.points[i].z!=float('-inf') and np.isnan(point_cloud_msg.points[i].z)==False) :
-                data=Point32()
-                data.x=point_cloud_msg.points[i].x
-                data.y=point_cloud_msg.points[i].y
-                data.z=point_cloud_msg.points[i].z
-                # print([point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z])
-                data_cloud.append(data)
-                # print([point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z])
-                data_dummy.append([point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z])
-        #print("data=",data)
-        #print("length of data=", len(data))
+            data_dummy.append([point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z])
         tree = KDTree(data_dummy)
-        num_neighbors = tree.query_radius(data_dummy, r = 1.0)
+        neighbors = tree.query_radius(data_dummy, r = 1.0)
+        centroids=[]
+        x=0.0
+        y=0.0
+        z=0.0
+        centroids_Point=Point32()
+        if len(centroids)==0:
+            for i in range(len(neighbors[0])):
+                x+=data_dummy[neighbors[0][i]][0]
+                y+=data_dummy[neighbors[0][i]][1]
+                z+=data_dummy[neighbors[0][i]][2]
+            value_list=[x/len(neighbors[0]), y/len(neighbors[0]), z/len(neighbors[0])]
+            centroids.append(value_list)
+            centroids_Point.x=value_list[0]
+            centroids_Point.y=value_list[1]
+            centroids_Point.z=value_list[2]
+            
+            data_cloud.append(centroids_Point)
+                
+        for n in range(1,len(neighbors)):
+            x=0.0
+            y=0.0
+            z=0.0
+            for i in range(len(neighbors[n])):
+                x+=data_dummy[neighbors[n][i]][0]
+                y+=data_dummy[neighbors[n][i]][1]
+                z+=data_dummy[neighbors[n][i]][2]
+            centre = [x/len(neighbors[n]), y/len(neighbors[n]), z/len(neighbors[n])]
+            #centroids.append([x/len(neighbors[n]), y/len(neighbors[n]), z/len(neighbors[n])])
+            least_dist = float('inf')
+            least_dist_id = -1
+            for c in range(len(centroids)):
+                euc_dist = np.sqrt((centre[0]-centroids[c][0])**2 + (centre[1]-centroids[c][1])**2 + (centre[2]-centroids[c][2])**2)
+                if euc_dist < least_dist:
+                    least_dist = euc_dist
+                    least_dist_id=c
+            #print ("least_dist=", least_dist)
+            if euc_dist <= THRESHOLD_CENTROIDS:
+                mean_x = (centre[0] + centroids[least_dist_id][0]) /2.0
+                mean_y = (centre[1] + centroids[least_dist_id][1]) /2.0
+                mean_z = (centre[2] + centroids[least_dist_id][2]) /2.0
+                centroids[least_dist_id] = [mean_x, mean_y, mean_z]
+            else:    
+                centroids.append(centre)
+                centroids_Point.x=centre[0]
+                centroids_Point.y=centre[1]
+                centroids_Point.z=centre[2]
+        centroids.clear()
         #print("num_neighbours= ", num_neighbors)
-        point_cloud_msg = PointCloud()
-        point_cloud_msg.header = point_cloud_msg.header
-        point_cloud_msg.points = data_cloud
-        return point_cloud_msg
+        point_cloud_msg_ = PointCloud()
+        point_cloud_msg_.header = point_cloud_msg.header
+        point_cloud_msg_.points = data_cloud
+        return point_cloud_msg_
         
         
         
