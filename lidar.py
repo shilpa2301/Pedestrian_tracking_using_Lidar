@@ -16,8 +16,8 @@ class LaserScanNode(Node):
 
     def laser_scan_callback(self, scan):
         intermediate_msg = self.laser_scan_to_intermediate(scan)
-        processed_msg=self.process_data(intermediate_msg)
-        self.intermediate_publisher.publish(processed_msg)
+        #processed_msg=self.process_data(intermediate_msg)
+        self.intermediate_publisher.publish(intermediate_msg)
 
     def laser_scan_to_intermediate(self, scan):
         point_cloud_data = []
@@ -27,12 +27,15 @@ class LaserScanNode(Node):
             x = scan.ranges[i] * math.cos(angle)
             y = scan.ranges[i] * math.sin(angle)
             z = 0.0
+            
             point32 = Point32()
             point32.x = x
             point32.y = y
             point32.z = z
-            point_cloud_data.append(point32)
-
+            if ((point32.x!=float('inf') and point32.x!=float('-inf') and np.isnan(point32.x)==False) \
+            and (point32.y!=float('inf') and point32.y!=float('-inf') and np.isnan(point32.y)==False) \
+            and point32.z!=float('inf') and point32.z!=float('-inf') and np.isnan(point32.z)==False) :
+                point_cloud_data.append(point32)
 
         point_cloud_msg = PointCloud()
         point_cloud_msg.header = scan.header
