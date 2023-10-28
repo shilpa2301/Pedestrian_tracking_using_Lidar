@@ -7,22 +7,47 @@ import numpy as np
 
 import math
 from sklearn.neighbors import KDTree
-THRESHOLD_CENTROIDS =  1.0
+
+THRESHOLD_SENSOR_MATCH = 1.5
+THRESHOLD_CENTROIDS =  0.3
+THRESHOLD_RADIUS_KDTREE = 0.5
 class LaserScanNode(Node):
 
     def __init__(self):
         super().__init__('laser_scan_node')
+        self.frame = 0
+        self.first_frame_data=[]
+        self.common_data =[]
+
         self.laser_scan_subscriber = self.create_subscription(LaserScan, 'scan', self.laser_scan_callback, 10)
         self.intermediate_publisher = self.create_publisher(PointCloud, 'intermediate_point_cloud', 10)
         self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 10)
 
     def laser_scan_callback(self, scan):
+        self.frame += 1
         intermediate_msg = self.laser_scan_to_intermediate(scan)
         processed_msg=self.process_data(intermediate_msg)
         self.centroid_publisher.publish(processed_msg)
-        self.intermediate_publisher.publish(intermediate_msg)
+
+    def find_static_common_points(self, first_frame_data, second_frame_data):
+        common_data=[]
+        sensor_error=0.0
+        n=0
+        total_dist = 0.0
+        print(f'first_{first_frame_data},{second_frame_data}')
+        for i in first_frame_data:
+            for j in second_frame_data:
+                dist = np.sqrt((i[0] -j[0])**2 + (i[1]-j[1])**2 + (i[2]-j[2])**2)
+                if dist <= THRESHOLD_SENSOR_MATCH:
+                    n+=1
+                    total_dist +=dist
+                    common_data.append([(i[0]+j[0]/2.0), (i[1]+j[1]/2.0), (i[1]+j[1]/2.0)])
+        print(f'dist_{dist}')
+        sensor_error = total_dist / n
+        return common_data, sensor_error
 
     def laser_scan_to_intermediate(self, scan):
+
         point_cloud_data = []
         point_original=[]
         for i in range(len(scan.ranges)):
@@ -46,13 +71,56 @@ class LaserScanNode(Node):
         point_cloud_msg.points = point_cloud_data
 
         return point_cloud_msg
+    
+    def dynamic_point_data(self, common_data, sensor_error_mean, data):
+        dynamic_data = []
+    
+        for curr in data:
+            is_static = False
+            for cd in common_data:
+                dist = np.sqrt((cd[0] - curr[0]) ** 2 + (cd[1] - curr[1]) ** 2 + (cd[2] - curr[2]) ** 2)
+                if dist <= sensor_error_mean:
+                    is_static = True
+                    break
+            if not is_static:
+                dynamic_data.append(curr)
+        return dynamic_data
+
+
+
     def process_data(self, point_cloud_msg):
         data=[]
 
         for i in range(len(point_cloud_msg.points)):
             data.append([point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z])
+        
+        if self.frame ==1:
+            self.first_frame_data = data
+        elif self.frame ==2:
+            #compare and find common points
+            second_frame_data = data
+            [self.common_data, self.sensor_error_mean] = self.find_static_common_points(self.first_frame_data, second_frame_data)
+        else:
+            data = self.dynamic_point_data(self.common_data, self.sensor_error_mean, data)
+        print(f'frame_{self.frame}')
+
+       # print(f'{self.first_frame_data}')
+        ##
+        point_dummy=[]
+        if self.frame!=1:
+            for i in range(len(data)):
+                Point_32=Point32()
+                Point_32.x=self.common_data[i][0]
+                Point_32.y=self.common_data[i][1]
+                Point_32.z=self.common_data[i][2]
+                point_dummy.append(Point_32)
+            # point_cloud_msg__ = PointCloud()
+            # point_cloud_msg__.header = point_cloud_msg.header
+            # point_cloud_msg__.points = point_dummy
+        ##
+        print(f'data_{self.common_data}')
         tree = KDTree(data)
-        neighbors = tree.query_radius(data, r = 1.0)
+        neighbors = tree.query_radius(data, r = THRESHOLD_RADIUS_KDTREE)
         centroids=[]
         x=0.0
         y=0.0
@@ -106,7 +174,7 @@ class LaserScanNode(Node):
         point_cloud_msg_ = PointCloud()
         point_cloud_msg_.header = point_cloud_msg.header
         point_cloud_msg_.points = data_cloud
-        return point_cloud_msg_
+        return point_cloud_msg_#,point_cloud_msg__
         
         
         
