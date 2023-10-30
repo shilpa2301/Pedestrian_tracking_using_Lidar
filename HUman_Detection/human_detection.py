@@ -15,18 +15,21 @@ THRESHOLD_CENTROIDS =  0.3
 THRESHOLD_RADIUS_KDTREE = 0.5
 THRESHOLD_IOU = 0.95
 THRESHOLD_INTERSECTION = 0.90
+#FRAME =0
 
 class LaserScanNode(Node):
 
     def __init__(self):
         super().__init__('laser_scan_node')
-        self.frame = 0
+        #self.frame = 0
         self.first_frame_data=[]
         self.common_data =[]
 
         self.laser_scan_subscriber = self.create_subscription(LaserScan, 'scan', self.laser_scan_callback, 10)
         self.intermediate_publisher = self.create_publisher(PointCloud, 'intermediate_point_cloud', 10)
         self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 10)
+
+        #create subscriber to /frame id topic
 
     def bb_Intersection(boxA, boxB):
         xA = max(boxA[0], boxB[0])
@@ -93,7 +96,8 @@ class LaserScanNode(Node):
         return common_data
 
     def laser_scan_to_intermediate(self, scan):
-        self.frame += 1
+        #global FRAME
+        #FRAME += 1
         point_cloud_data = []
         point_original=[]
         for i in range(len(scan.ranges)):
@@ -139,7 +143,7 @@ class LaserScanNode(Node):
 
 
     def process_data(self, point_cloud_msg):
-        
+        global FRAME
         data=[]
         for i in range(len(point_cloud_msg.points)):
             data.append([point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z])
@@ -235,20 +239,42 @@ class LaserScanNode(Node):
 
                 
         #static vs dynamic
+        #print("FRAME = ", FRAME)
+        #curr_frame_data = [centroids, bounding_box]
+        #if FRAME ==1:
+        #    self.first_frame_data = curr_frame_data
+        #    # print("first_frame_data=",  self.first_frame_data)
+        #elif FRAME ==2 and FRAME==3:
+        #    #compare and find common points
+        #    if FRAME ==2:
+        #        self.common_data = self.first_frame_data
+        #    print("second/third_frame_data=",  self.common_data)
+        #    [self.common_data] = self.find_static_common_points(self.common_data, curr_frame_data)
+        #else:
+        #    data = self.dynamic_point_data(self.common_data, curr_frame_data)
+#
+        #centroids = data[0]
+        #print("centroids=", centroids)
+
+        #/subscribe to /frameid topic = FRAME
         
-        curr_frame_data = [centroids, bounding_box]
-        if self.frame ==1:
+        self.curr_frame_data = [centroids, bounding_box]
+        if FRAME ==1:
             self.first_frame_data = curr_frame_data
-        elif self.frame ==2 and self.frame==3:
+            # print("first_frame_data=",  self.first_frame_data)
+        elif FRAME ==2 and FRAME==3:
             #compare and find common points
-            if self.frame ==2:
+            if FRAME ==2:
                 self.common_data = self.first_frame_data
+            print("second/third_frame_data=",  self.common_data)
             [self.common_data] = self.find_static_common_points(self.common_data, curr_frame_data)
         else:
             data = self.dynamic_point_data(self.common_data, curr_frame_data)
 
-        centroids = data[1]
+        centroids = data[0]
         print("centroids=", centroids)
+
+        #increment FRAME and publish to /frameid topic
 
 
 
@@ -302,10 +328,15 @@ class PointCloudNode(Node):
         point_cloud_msg.header=msg.header
         return point_cloud_msg
 
-
+#class N1
+#init - publishes 1 to a topic /frameid
         
 def main(args=None):
     rclpy.init(args=args)
+
+    #create Onetime node N1
+    #destroynode
+
     print('node_1  start')
     node = LaserScanNode()
     rclpy.spin(node)
