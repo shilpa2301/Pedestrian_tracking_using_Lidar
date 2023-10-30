@@ -248,6 +248,7 @@ class LaserScanNode(Node):
             data = self.dynamic_point_data(self.common_data, curr_frame_data)
 
         centroids = data[1]
+        print("centroids=", centroids)
 
 
 
