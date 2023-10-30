@@ -30,6 +30,12 @@ class LaserScanNode(Node):
         self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 10)
 
         #create subscriber to /frame id topic
+        self.frame_subscriber = self.create_subscription(Int64, 'frame_id', self.frame_callback, 10)
+        self.frame_publisher = self.create_publisher(Int64, 'frame_id', 10)
+
+    def frame_callback(self, frame_id):
+        self.frame_id = frame_id
+        return frame_id
 
     def bb_Intersection(boxA, boxB):
         xA = max(boxA[0], boxB[0])
@@ -259,6 +265,7 @@ class LaserScanNode(Node):
         #/subscribe to /frameid topic = FRAME
         
         self.curr_frame_data = [centroids, bounding_box]
+        FRAME = 
         if FRAME ==1:
             self.first_frame_data = curr_frame_data
             # print("first_frame_data=",  self.first_frame_data)
@@ -329,16 +336,31 @@ class PointCloudNode(Node):
         return point_cloud_msg
 
 #class N1
+class InitFrameNode(Node):
+    def __init__(self):
+        super().__init__('init_frame_node')
+        self.first_frame_data=[]
+        self.common_data =[]
+        self.frameid_publisher = self.create_publisher(Int64, 'frame_id', 10)
+    
+    def publish_frameid(self):
+        int64_msg = Int64()
+        int64_msg.data = 1
+        self.frameid_publisher.publish(int64_msg)
+
+
 #init - publishes 1 to a topic /frameid
         
 def main(args=None):
     rclpy.init(args=args)
 
     #create Onetime node N1
+    initframe_node = InitFrameNode()
+    initframe_node.publish_frameid()
     #destroynode
-
     print('node_1  start')
     node = LaserScanNode()
+    initframe_node.destroy_node()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
