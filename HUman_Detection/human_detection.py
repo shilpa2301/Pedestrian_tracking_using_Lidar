@@ -9,6 +9,7 @@ import math
 from sklearn.neighbors import KDTree
 
 import numpy.linalg as LA
+import time
 
 THRESHOLD_SENSOR_MATCH = 0.2
 THRESHOLD_CENTROIDS =  0.3
@@ -25,15 +26,23 @@ class LaserScanNode(Node):
         self.first_frame_data=[]
         self.common_data =[]
 
-        self.laser_scan_subscriber = self.create_subscription(LaserScan, 'scan', self.laser_scan_callback, 10)
-        self.intermediate_publisher = self.create_publisher(PointCloud, 'intermediate_point_cloud', 10)
-        self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 10)
+
+        self.frame_id =0
 
         #create subscriber to /frame id topic
         self.frame_subscriber = self.create_subscription(Int64, 'frame_id', self.frame_callback, 10)
         self.frame_publisher = self.create_publisher(Int64, 'frame_id', 10)
+        
+
+        self.laser_scan_subscriber = self.create_subscription(LaserScan, 'scan', self.laser_scan_callback, 10)
+        self.intermediate_publisher = self.create_publisher(PointCloud, 'intermediate_point_cloud', 10)
+        self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 10)
+
+
+        
 
     def frame_callback(self, frame_id):
+        print("Received frame id=", frame_id)
         self.frame_id = frame_id
         return frame_id
 
@@ -265,18 +274,23 @@ class LaserScanNode(Node):
         #/subscribe to /frameid topic = FRAME
         
         self.curr_frame_data = [centroids, bounding_box]
-        FRAME = 
-        if FRAME ==1:
-            self.first_frame_data = curr_frame_data
+
+        print("framed id=", self.frame_id)
+        
+        if self.frame_id ==1:
+            self.first_frame_data = self.curr_frame_data
             # print("first_frame_data=",  self.first_frame_data)
-        elif FRAME ==2 and FRAME==3:
+        elif self.frame_id ==2 and self.frame_id==3:
             #compare and find common points
-            if FRAME ==2:
+            if self.frame_id ==2:
                 self.common_data = self.first_frame_data
             print("second/third_frame_data=",  self.common_data)
             [self.common_data] = self.find_static_common_points(self.common_data, curr_frame_data)
-        else:
+        elif self.frame_id>=4:
             data = self.dynamic_point_data(self.common_data, curr_frame_data)
+
+        self.frame_publisher.publish(self.frame_id +1)
+
 
         centroids = data[0]
         print("centroids=", centroids)
@@ -346,6 +360,7 @@ class InitFrameNode(Node):
     def publish_frameid(self):
         int64_msg = Int64()
         int64_msg.data = 1
+        print("Publishing init frame id=")
         self.frameid_publisher.publish(int64_msg)
 
 
