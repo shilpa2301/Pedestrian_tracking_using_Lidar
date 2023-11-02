@@ -186,18 +186,18 @@ class LaserScanNode(Node):
                     #print()
                     #del data[0][j]
                     #del data[1][j]
-                    print(i,",",j)
-                    print("intersection for i,j=", intersection)
+                    #print(i,",",j)
+                    #print("intersection for i,j=", intersection)
 
                     centre_ref=common_data[0][i]
                     centre_curr = data[0][j]
                     dist = np.sqrt((centre_ref[0]-centre_curr[0])**2 + (centre_ref[1]-centre_curr[1])**2 +(centre_ref[2]-centre_curr[2])**2)
-                    print("dist=", dist)
+                    #print("dist=", dist)
                     if dist<=THRESHOLD_CENTROID_DISTANCE_WITH_REF:
-                        print("dist of centroid satisfied")
+                        #print("dist of centroid satisfied")
                         if data[0][j] not in centr_list:
 
-                            print("appending id=", j)
+                            #print("appending id=", j)
                             bb_list.append(data[1][j])
                             centr_list.append(data[0][j])
 
