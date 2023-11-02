@@ -15,7 +15,8 @@ THRESHOLD_SENSOR_MATCH = 0.2
 THRESHOLD_CENTROIDS =  1.2
 THRESHOLD_RADIUS_KDTREE = 0.8
 THRESHOLD_IOU = 0.80
-THRESHOLD_INTERSECTION = 0.02
+THRESHOLD_INTERSECTION = 0.50
+THRESHOLD_CENTROID_DISTANCE_WITH_REF = 2.7
 #FRAME =0
 
 class LaserScanNode(Node):
@@ -185,10 +186,20 @@ class LaserScanNode(Node):
                     #print()
                     #del data[0][j]
                     #del data[1][j]
-                    if data[0][j] not in centr_list:
-                        #print("appending=", data[1][j])
-                        bb_list.append(data[1][j])
-                        centr_list.append(data[0][j])
+                    print(i,",",j)
+                    print("intersection for i,j=", intersection)
+
+                    centre_ref=common_data[0][i]
+                    centre_curr = data[0][j]
+                    dist = np.sqrt((centre_ref[0]-centre_curr[0])**2 + (centre_ref[1]-centre_curr[1])**2 +(centre_ref[2]-centre_curr[2])**2)
+                    print("dist=", dist)
+                    if dist<=THRESHOLD_CENTROID_DISTANCE_WITH_REF:
+                        print("dist of centroid satisfied")
+                        if data[0][j] not in centr_list:
+
+                            print("appending id=", j)
+                            bb_list.append(data[1][j])
+                            centr_list.append(data[0][j])
 
         print("len of dynamic calculated data=", len(bb_list))
                                         
