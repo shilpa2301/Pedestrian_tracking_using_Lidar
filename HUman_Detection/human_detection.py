@@ -14,6 +14,7 @@ import time
 from filterpy.kalman import KalmanFilter
 import math
 from filterpy.common import Q_discrete_white_noise
+import sys
 
 THRESHOLD_SENSOR_MATCH = 0.2
 THRESHOLD_CENTROIDS =  1.2
@@ -21,7 +22,9 @@ THRESHOLD_RADIUS_KDTREE = 0.8
 THRESHOLD_IOU = 0.80
 THRESHOLD_INTERSECTION = 0.50
 THRESHOLD_CENTROID_DISTANCE_WITH_REF = 2.7
-HUMAN_DIRECTION_THRESHOLD = 30.0
+THRESHOLD_TRACKING_DIST_FOR_ASSOCIATIVITY = 3.0
+
+#HUMAN_DIRECTION_THRESHOLD = 30.0
 #FRAME =0
 
 class LaserScanNode(Node):
@@ -244,83 +247,97 @@ class LaserScanNode(Node):
             pos_y = self.kf.x[1]
             print("predicted =", pos_x, ",",pos_y)
             #self.get_logger().info(f"Object Direction (Degrees): {object_direction_degrees}")
+            return self.kf.x
 
     def call_kalman(self, centroids, header):
-         # Calculate cluster direction
-        cluster_data = np.array([[p[0],p[1]] for p in centroids])
-        new_obj_list=[]
-        #cluster_data = np.array([[point.x, point.y] for point in processed_msg.points])
-        print(len(cluster_data))
-        
-        if len(self.objects)==0:
-            it =1
-            for c in cluster_data:
-                obj_c = [it, c[0], c[1], 0, 1, 0] # obj_id, x,y, heading, lifetime, not seen
-                new_obj_list.append(obj_c)
-                #new_position = self.kalman_calculate(prev_state)
-                it+=1
-            
+        if self.frame_id>1:
+             # Calculate cluster direction
+            cluster_data = np.array([[p[0],p[1]] for p in centroids])
+            print("kalman obs=", cluster_data)
+            new_obj_list=[]
+            #cluster_data = np.array([[point.x, point.y] for point in processed_msg.points])
+            print(len(cluster_data))
 
-        else:
-            
-            #new_obj_list =[]
-            visited_obs=[]
+            if len(self.objects)==0:
+                it =1
+                for c in cluster_data:
+                    obj_c = [it, c[0], c[1], 0, 1, 0] # obj_id, x,y, heading, lifetime, not seen
+                    new_obj_list.append(obj_c)
+                    #new_position = self.kalman_calculate(prev_state)
+                    it+=1
 
-            for prev_state in self.objects:
-                           
-                        min_dist = float('inf')
-                        for obs_id in range(len(cluster_data)):
-                            obs_x = cluster_data[obs_id][0]
-                            obs_y = cluster_data[obs_id][1]
+                print("kalman first data=", new_obj_list)
 
-                            prev_state_id =      prev_state[0]
-                            prev_state_x =       prev_state[1]
-                            prev_state_y =       prev_state[2]
-                            prev_state_heading = prev_state[3]
 
-                            dist = np.sqrt((obs_x - prev_state_x)**2 + (obs_y - prev_state_y)**2)
-                            if dist < min_dist:
-                                min_dist = dist
-                                min_obj = prev_state
-                                obs_id_min_dist = obs_id
+            else:
 
-                        visited_obs.append(obs_id_min_dist)
-                        min_obj[1] = obs_x
-                        min_obj[2] = obs_y
-                        min_obj[3] = np.arctan2((obs_y - prev_state_y)/(obs_x - prev_state_x))
-                        min_obj[4] +=1
-                        new_obj_list.append(min_obj)
-                
-                        
-            
-            for prev_state in self.objects:
-                if prev_state[0] not in [obj[0] for obj in new_obj_list] :
-                    prev_state[4] +=1
-                    prev_state[5] +=1
-                    new_position = self.kalman_predict(prev_state)
-                    prev_state[1] = new_position[0]
-                    prev_state[2] = new_position[1]
-                    new_obj_list.append(prev_state)
+                #new_obj_list =[]
+                visited_obs=[]
+                print("object list prev=", self.objects)
+                for prev_state in self.objects:
+                            obs_id_min_dist = -1.  
+                            min_dist = float('inf')
+                            min_obj=[]
+                            for obs_id in range(len(cluster_data)):
+                                obs_x = cluster_data[obs_id][0]
+                                obs_y = cluster_data[obs_id][1]
 
-            for i in range(len(cluster_data)):
-                    if i not in visited_obs:
-                        new_obj = [len(new_obj_list), cluster_data[i][0], cluster_data[i][1], 0, 1, 0]
-                        new_obj_list.append(new_obj)
-            
+                                prev_state_id =      prev_state[0]
+                                prev_state_x =       prev_state[1]
+                                prev_state_y =       prev_state[2]
+                                prev_state_heading = prev_state[3]
+
+                                dist = np.sqrt((obs_x - prev_state_x)**2 + (obs_y - prev_state_y)**2)
+                                if dist < min_dist:
+                                    min_dist = dist
+                                    min_obj = prev_state
+                                    obs_id_min_dist = obs_id
+                                
+                            if obs_id_min_dist != -1:
+                                print("min_dist = ", min_dist)
+                                if min_dist < THRESHOLD_TRACKING_DIST_FOR_ASSOCIATIVITY:
+                                    print("min obs id=", obs_id_min_dist)
+                                    visited_obs.append(obs_id_min_dist)
+                                    min_obj[1] = cluster_data[obs_id_min_dist][0]
+                                    min_obj[2] = cluster_data[obs_id_min_dist][1]
+                                    min_obj[3] = np.arctan2((cluster_data[obs_id_min_dist][1] - prev_state_y),(cluster_data[obs_id_min_dist][0] - prev_state_x))
+                                    min_obj[4] +=1
+                                    new_obj_list.append(min_obj)
+
+                print("new_obj_list=", new_obj_list)
+                print("visited obs=", visited_obs)
+                #if self.frame_id == 15:
+                #    sys.exit()
+
+                for prev_state in self.objects:
+                    if prev_state[0] not in [obj[0] for obj in new_obj_list] :
+                        prev_state[4] +=1
+                        prev_state[5] +=1
+                        new_position = self.kalman_predict(prev_state)
+                        prev_state[1] = float(new_position[0])
+                        prev_state[2] = float(new_position[1])
+                        new_obj_list.append(prev_state)
+
+                for i in range(len(cluster_data)):
+                        if i not in visited_obs:
+                            new_obj = [len(new_obj_list), cluster_data[i][0], cluster_data[i][1], 0, 1, 0]
+                            new_obj_list.append(new_obj)
+
             self.objects.clear()
             self.objects = new_obj_list
 
-        data_cloud=[]
-        for obj in self.objects:
-            point32 = Point32()
-            point32.x = obj[1]
-            point32.y = obj[2]
-            point32.z = 0.0
-            data_cloud.append(point32)
-            point_cloud_msg_ = PointCloud()
-            point_cloud_msg_.header = header
-            point_cloud_msg_.points = data_cloud
-            self.human_direction_publisher.publish(point_cloud_msg_)
+            data_cloud=[]
+            for obj in self.objects:
+                print("storing data=", obj)
+                point32 = Point32()
+                point32.x = obj[1]
+                point32.y = obj[2]
+                point32.z = 0.0
+                data_cloud.append(point32)
+                point_cloud_msg_ = PointCloud()
+                point_cloud_msg_.header = header
+                point_cloud_msg_.points = data_cloud
+                self.human_direction_publisher.publish(point_cloud_msg_)
 
 
 
