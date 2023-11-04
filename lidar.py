@@ -15,7 +15,7 @@ THRESHOLD_CENTROIDS = 1
 THRESHOLD_RADIUS_KDTREE = 1
 HUMAN_DIRECTION_THRESHOLD = 30.0  # 사람으로 인식하는 방향의 임계값
 THRESHOLD_OBJECT_DISTANCE=1
-DISTANCE_THRESHOLD=0.3
+DISTANCE_THRESHOLD=0.5
 class LaserScanNode(Node):
 
     def __init__(self):
@@ -38,12 +38,14 @@ class LaserScanNode(Node):
         self.object_id_counter = 0
         self.tracked_objects = {}
         self.human_positions = {}
-        self.frames_since_detection = 0
-        self.human_index = 0
+        #self.frames_since_detection = 0
+        #self.human_index = 0
         self.human_direction = 0.0
         self.initial_frames = []  # 처음 5개 프레임 저장
         self.ignore_distance = 0.5  # 0.1 이하의 거리에 있는 점은 무시
-
+        self.cluster_history = {}  # 클러스터 이력을 저장할 딕셔너리 추가
+        self.cluster_history_duration = 5  # 클러스터를 유지할 프레임 수
+        self.ignore_cluster_threshold = 0.5  # 클러스터 위치를 비교할 임계값
         
         
     def laser_scan_callback(self, scan):
@@ -67,7 +69,6 @@ class LaserScanNode(Node):
             data_cloud = []
     
         # 클러스터 이동을 추적할 변수
-            detected_clusters = {}  # 감지된 클러스터의 현재 위치를 저장할 사전
             for i in range(len(cluster_data)):
                 cluster_direction_radians = np.arctan2(cluster_data[i][1], cluster_data[i][0])
                 cluster_direction_degrees = np.degrees(cluster_direction_radians)
@@ -82,36 +83,35 @@ class LaserScanNode(Node):
     
                 # ID 할당 및 업데이트
                 object_id = self.assign_object_id(cluster_data[i])
-                self.get_logger().info(f"Object ID: {object_id}")
-    
-                if object_id in self.tracked_objects:
-                    # 현재 프레임에서 감지된 물체의 위치를 저장
-                    self.tracked_objects[object_id] = cluster_data[i]
-    
-                # 물체가 사람으로 판단될 경우 사람의 이동을 추적
-                    if abs(object_direction_degrees - self.human_direction) < HUMAN_DIRECTION_THRESHOLD:
-                        if object_id in self.human_positions:
-                            prev_position = self.human_positions[object_id]
-                            distance = np.sqrt((cluster_data[i][0] - prev_position[0]) ** 2 + (cluster_data[i][1] - prev_position[1]) ** 2)
-                            if distance > DISTANCE_THRESHOLD:  # 이동 거리가 10 이상인 경우에만 사람으로 판단
-                                self.get_logger().info(f"Moving human detected (ID: {object_id})")
-                                self.human_index += 1  # 사람 인덱스 증가
-    
-                                # 필요한 경우 사람 인덱스를 publish
-                                human_index_msg = Int64()
-                                human_index_msg.data = self.human_index
-                                self.human_index_publisher.publish(human_index_msg)
-                    # 현재 위치를 이전 위치로 업데이트
-                        self.human_positions[object_id] = cluster_data[i]
-                else:
-                # 사람으로 판단된 물체가 아닐 경우, 물체의 ID를 갱신하지 않고 추적하지 않음
-                # 이동이 없는 물체는 여기에 해당
-                    pass
-                
 
+                self.get_logger().info(f"Object ID: {object_id}")
+            
+                human_index_msg = Int64()
+                human_index_msg.data = self.object_id_counter
+                self.human_index_publisher.publish(human_index_msg)
+
+                # # 물체가 사람으로 판단될 경우 사람의 이동을 추적
+                #     if abs(object_direction_degrees - self.human_direction) < HUMAN_DIRECTION_THRESHOLD:
+                #         if object_id in self.human_positions:
+                #             prev_position = self.human_positions[object_id]
+                #             distance = np.sqrt((cluster_data[i][0] - prev_position[0]) ** 2 + (cluster_data[i][1] - prev_position[1]) ** 2)
+                #             if distance > DISTANCE_THRESHOLD:  # 이동 거리가 10 이상인 경우에만 사람으로 판단
+                #                 self.get_logger().info(f"Moving human detected (ID: {object_id})")
+                #                 self.human_index += 1  # 사람 인덱스 증가
+    
+                #                 # 필요한 경우 사람 인덱스를 publish
+                #                 human_index_msg = Int64()
+                #                 human_index_msg.data = self.human_index
+                #                 self.human_index_publisher.publish(human_index_msg)
+                #     # 현재 위치를 이전 위치로 업데이트
+                #         self.human_positions[object_id] = cluster_data[i]
+                # else:
+                # # 사람으로 판단된 물체가 아닐 경우, 물체의 ID를 갱신하지 않고 추적하지 않음
+                # # 이동이 없는 물체는 여기에 해당
+                #     pass
     
                 print(abs(object_direction_degrees - self.human_direction))
-            # Check if the cluster direction is within the threshold to be considered a human
+            # Ch   eck if the cluster direction is within the threshold to be considered a human
             
                 if abs(object_direction_degrees - self.human_direction) < HUMAN_DIRECTION_THRESHOLD:
                     self.get_logger().info(f"Human detected._{cluster_data[i]}")
@@ -125,31 +125,7 @@ class LaserScanNode(Node):
                     point_cloud_msg_.points = data_cloud
                     self.human_direction_publisher.publish(point_cloud_msg_)
                 # Add your code to perform actions when a human is detected
-            data_cloud = []
-            for i in range(len(cluster_data)):
-                cluster_direction_radians = np.arctan2(cluster_data[i][1], cluster_data[i][0])
-                cluster_direction_degrees = np.degrees(cluster_direction_radians)
-                self.get_logger().info(f"Cluster Direction (Degrees): {cluster_direction_degrees}")
-    
-                # Predict object direction using Kalman filter
-                self.kf.predict()
-                self.kf.update(cluster_direction_degrees)
-                object_direction_degrees = self.kf.x[0]
-                self.get_logger().info(f"Object Direction (Degrees): {object_direction_degrees}")
-    
-                # Check if the cluster direction is within the threshold to be considered a human
-                if abs(object_direction_degrees - self.human_direction) < HUMAN_DIRECTION_THRESHOLD:
-                    self.get_logger().info(f"Human detected._{cluster_data[i]}")
-    
-                    # ID 할당 및 업데이트
-                    object_id = self.assign_object_id(cluster_data[i])
-                    self.get_logger().info(f"Object ID: {object_id}")
-    
-                    point32 = Point32()
-                    point32.x = cluster_data[i][0]
-                    point32.y = cluster_data[i][1]
-                    point32.z = 0.0
-                    data_cloud.append(point32)
+            
     def distance_filter(self, scan):
         # 처음 5개의 프레임에서 얻은 점과의 거리가 일정 이상인 데이터만 추출하여 반환
         filtered_points = []
@@ -211,14 +187,27 @@ class LaserScanNode(Node):
         # 새로운 물체의 중심 위치를 받아서 ID를 할당하거나 업데이트합니다.
         for obj_id, obj_position in self.tracked_objects.items():
             dist = np.sqrt((position[0] - obj_position[0]) ** 2 + (position[1] - obj_position[1]) ** 2)
+
             if dist < THRESHOLD_OBJECT_DISTANCE:
                 # 이미 추적 중인 물체와 거리가 가까우면 해당 물체의 ID 반환
                 return obj_id
 
+        # 새로운 물체인 경우, 클러스터 이력을 확인하여 2프레임 이상 존재하면 ID를 할당하고 저장
+        for obj_id, history in self.cluster_history.items():
+            if len(history) >= self.cluster_history_duration:
+                dist = np.sqrt((position[0] - history[-1][0]) ** 2 + (position[1] - history[-1][1]) ** 2)
+                if dist < self.ignore_cluster_threshold:
+                    # 2프레임 이상 존재하는 클러스터에 해당 ID를 할당
+                    self.tracked_objects[obj_id] = position
+                    return obj_id
+
         # 새로운 물체인 경우, 새로운 ID를 생성하고 저장
         self.object_id_counter += 1
         self.tracked_objects[self.object_id_counter] = position
+        # 새로운 클러스터의 이력 시작
+        self.cluster_history[self.object_id_counter] = [position]
         return self.object_id_counter
+
     def process_data(self, point_cloud_msg):
         data = []
         for i in range(len(point_cloud_msg.points)):
