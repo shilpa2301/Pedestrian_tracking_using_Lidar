@@ -17,9 +17,9 @@ class LaserScanNode(Node):
         super().__init__('laser_scan_node')
         self.frame_id = 0
         self.laser_scan_subscriber = self.create_subscription(LaserScan, 'scan', self.laser_scan_callback, 10)
-        self.intermediate_publisher = self.create_publisher(PointCloud, 'intermediate_point_cloud', 20)
-        self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 20)
-        self.human_index_publisher = self.create_publisher(Int64, 'people_number', 20)
+        self.intermediate_publisher = self.create_publisher(PointCloud, 'intermediate_point_cloud', 10)
+        self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 10)
+        self.human_index_publisher = self.create_publisher(Int64, 'people_number', 10)
         
         self.object_id_counter = 0
         self.tracked_objects = {}
@@ -51,6 +51,9 @@ class LaserScanNode(Node):
                 human_index_msg=Int64()
                 human_index_msg.data=self.human_index
                 self.human_index_publisher.publish(human_index_msg)
+                if object_id in self.tracked_objects:
+                    # 현재 프레임에서 감지된 물체의 위치를 저장
+                    self.tracked_objects[object_id] = cluster_data[i]
                 
     def distance_filter(self, scan):
         filtered_points = []
