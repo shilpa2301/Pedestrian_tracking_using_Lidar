@@ -48,6 +48,9 @@ class LaserScanNode(Node):
                 if object_id > self.human_index:
                     self.human_index = object_id
                 self.get_logger().info(f"Object ID: {object_id}")
+                human_index_msg=Int64()
+                human_index_msg.data=self.human_index
+                self.human_index_publisher.publish(human_index_msg)
                 
     def distance_filter(self, scan):
         filtered_points = []
