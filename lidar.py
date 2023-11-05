@@ -25,11 +25,11 @@ class LaserScanNode(Node):
             if len(filtered_msg.points) == 0:
                 return
             self.intermediate_publisher.publish(filtered_msg)   
-    def distance_filter(self, scan):
+    def distance_filter(self, point_cloud):
         filtered_points = []
-        for i in range(len(scan.points)):
-            x = scan.points[i].x
-            y = scan.points[i].y
+        for i in range(len(point_cloud.points)):
+            x = point_cloud.points[i].x
+            y = point_cloud.points[i].y
             ignore_point = False
             for initial_frame in self.initial_frames:
                 for j in range(len(initial_frame.ranges)):
@@ -43,9 +43,9 @@ class LaserScanNode(Node):
                 if ignore_point:
                     break
             if not ignore_point:
-                filtered_points.append(scan.points[i])
+                filtered_points.append(point_cloud.points[i])
         distance_filtered_msg = PointCloud()
-        distance_filtered_msg.header = scan.header
+        distance_filtered_msg.header = point_cloud.header
         distance_filtered_msg.points = filtered_points
         return distance_filtered_msg
     def laser_scan_to_intermediate(self, scan):
