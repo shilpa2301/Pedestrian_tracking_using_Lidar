@@ -100,8 +100,8 @@ class PointCloudNode(Node):
     def __init__(self):
         super().__init__('point_cloud_node')
         self.intermediate_subscriber = self.create_subscription(PointCloud, 'intermediate_point_cloud', self.intermediate_callback, 10)
-        self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 20)
-        self.human_index_publisher = self.create_publisher(Int64, 'people_number', 20)
+        self.centroid_publisher = self.create_publisher(PointCloud, 'person_locations', 20)
+        self.human_index_publisher = self.create_publisher(Int64, 'person_count', 20)
 
         
         
