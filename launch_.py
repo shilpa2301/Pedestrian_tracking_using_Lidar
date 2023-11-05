@@ -37,7 +37,7 @@ def generate_launch_description():
     )
     # Execute an additional process (ros2 bag record) using ExecuteProcess
     bag_record = ExecuteProcess(
-        cmd=['ros2', 'bag', 'record', '/point_cloud','people_number','-o', arg_out_value],
+        cmd=['ros2', 'bag', 'record', '-a','-o', arg_out_value],
         output='screen',
     )
     #if you want to add /intermediate_point_cloud
