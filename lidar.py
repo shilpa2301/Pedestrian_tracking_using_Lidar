@@ -15,18 +15,14 @@ class LaserScanNode(Node):
 
     def __init__(self):
         super().__init__('laser_scan_node')
-        self.frame_id = 0
         self.laser_scan_subscriber = self.create_subscription(LaserScan, 'scan', self.laser_scan_callback, 10)
         self.intermediate_publisher = self.create_publisher(PointCloud, 'intermediate_point_cloud', 20)
-        self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 20)
-        self.human_index_publisher = self.create_publisher(Int64, 'people_number', 20)
-        
-        self.object_id_counter = 0
-        self.tracked_objects = {}
-        self.human_positions = {}
-        self.human_index = 0
+        # self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 20)
+        # self.human_index_publisher = self.create_publisher(Int64, 'people_number', 20)
         self.initial_frames = []
         self.ignore_distance = 0.5
+
+      
         
 
     def laser_scan_callback(self, scan):
@@ -34,26 +30,12 @@ class LaserScanNode(Node):
             self.initial_frames.append(scan)
         else:
             intermediate_msg = self.laser_scan_to_intermediate(scan)
-            roi_filtered_msg = self.distance_filter(intermediate_msg)
-            self.intermediate_publisher.publish(intermediate_msg)
-            if len(roi_filtered_msg.points) == 0:
+            #self.intermediate_publisher.publish(intermediate_msg)
+            filtered_msg = self.distance_filter(intermediate_msg)
+            if len(filtered_msg.points) == 0:
                 return
-            processed_msg = self.process_data(roi_filtered_msg)
-            self.centroid_publisher.publish(processed_msg)
-
-            cluster_data = np.array([[point.x, point.y] for point in processed_msg.points])
+            self.intermediate_publisher.publish(filtered_msg)
         
-            for i in range(len(cluster_data)):
-                object_id = self.assign_object_id(cluster_data[i])
-                if object_id > self.human_index:
-                    self.human_index = object_id
-                self.get_logger().info(f"Object ID: {object_id}")
-                human_index_msg=Int64()
-                human_index_msg.data=self.human_index
-                self.human_index_publisher.publish(human_index_msg)
-                if object_id in self.tracked_objects:
-                    # 현재 프레임에서 감지된 물체의 위치를 저장
-                    self.tracked_objects[object_id] = cluster_data[i]
                 
     def distance_filter(self, scan):
         filtered_points = []
@@ -105,12 +87,49 @@ class LaserScanNode(Node):
                 not np.isnan(point32.z)):
                 point_cloud_data.append(point32)
 
-        self.frame_id = scan.header
+        
         point_cloud_msg = PointCloud()
-        point_cloud_msg.header = self.frame_id
+        point_cloud_msg.header = scan.header
         point_cloud_msg.points = point_cloud_data
 
         return point_cloud_msg
+
+
+
+class PointCloudNode(Node):
+    def __init__(self):
+        super().__init__('point_cloud_node')
+        self.intermediate_subscriber = self.create_subscription(PointCloud, 'intermediate_point_cloud', self.intermediate_callback, 10)
+        self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 20)
+        self.human_index_publisher = self.create_publisher(Int64, 'people_number', 20)
+
+        
+        
+        self.object_id_counter = 0
+        self.tracked_objects = {}
+        self.human_positions = {}
+        self.human_index = 0
+
+
+    def intermediate_callback(self, msg):
+
+        processed_msg = self.process_data(msg)
+        self.centroid_publisher.publish(processed_msg)
+        cluster_data = np.array([[point.x, point.y] for point in processed_msg.points])
+    
+        for i in range(len(cluster_data)):
+            object_id = self.assign_object_id(cluster_data[i])
+            if object_id > self.human_index:
+                self.human_index = object_id
+            self.get_logger().info(f"Object ID: {object_id}")
+            human_index_msg=Int64()
+            human_index_msg.data=self.human_index
+            self.human_index_publisher.publish(human_index_msg)
+            if object_id in self.tracked_objects:
+                # 현재 프레임에서 감지된 물체의 위치를 저장
+                self.tracked_objects[object_id] = cluster_data[i]
+
+
 
     def assign_object_id(self, position):
         for obj_id, obj_position in self.tracked_objects.items():
@@ -175,16 +194,24 @@ class LaserScanNode(Node):
             data_cloud.append(centroids_Point)
         centroids.clear()
         point_cloud_msg_ = PointCloud()
-        point_cloud_msg_.header = self.frame_id
+        point_cloud_msg_.header = point_cloud_msg.header
         point_cloud_msg_.points = data_cloud
         return point_cloud_msg_
 
+
+
 def main(args=None):
     rclpy.init(args=args)
+    print('node_1 start')
     node = LaserScanNode()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
 
-if __name__ == '__main__':
-    main()
+def main_2(args=None):
+    rclpy.init(args=args)
+    print('node_2 start')
+    node_2=PointCloudNode()
+    rclpy.spin(node_2)
+    node_2.destroy_node()
+    rclpy.shutdown()
