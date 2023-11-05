@@ -31,6 +31,7 @@ class LaserScanNode(Node):
         self.intermediate_publisher = self.create_publisher(PointCloud, 'intermediate_point_cloud', 50)
         #The initial frames which would be considered is a list type.
         self.initial_frames = []
+
     def laser_scan_callback(self, scan):
         #We would consider if the initial_frames has a smaller length than the intended length of initial frames to consider
         if len(self.initial_frames) < INITIAL_FRAMES_TO_CONSDIER:
@@ -70,7 +71,7 @@ class LaserScanNode(Node):
         point_cloud_msg.points = point_cloud_data
         return point_cloud_msg
     
-    # A function to filter out the static objects        
+    # A function to filter out the static objects based on distance       
     def distance_filter(self, point_cloud):
         filtered_points = []
         for i in range(len(point_cloud.points)):
@@ -162,12 +163,15 @@ class PointCloudNode(Node):
             data.append([point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z])
         # Use KDTree in order to get centroids
         tree = KDTree(data)
+
+        #neighbours in same cluster also given out, hence redundant cluster
         neighbors = tree.query_radius(data, r=THRESHOLD_RADIUS_KDTREE)
         centroids = []
         x = 0.0
         y = 0.0
         z = 0.0
 
+        #first data, simply append
         if len(centroids) == 0:
             for i in range(len(neighbors[0])):
                 x += data[neighbors[0][i]][0]
@@ -176,6 +180,8 @@ class PointCloudNode(Node):
             value_list = [x / len(neighbors[0]), y / len(neighbors[0]), z / len(neighbors[0])]
             centroids.append(value_list)
 
+
+        #decide how to add remaining neighbors to remove redundant clusters
         for n in range(1, len(neighbors)):
             x = 0.0
             y = 0.0
@@ -193,13 +199,18 @@ class PointCloudNode(Node):
                 if euc_dist < least_dist:
                     least_dist = euc_dist
                     least_dist_id = c
+
+            #redundant clusters. action -> take the mean with the current centroid
             if euc_dist <= THRESHOLD_CENTROIDS:
                 mean_x = (centre[0] + centroids[least_dist_id][0]) / 2.0
                 mean_y = (centre[1] + centroids[least_dist_id][1]) / 2.0
                 mean_z = (centre[2] + centroids[least_dist_id][2]) / 2.0
                 centroids[least_dist_id] = [mean_x, mean_y, mean_z]
             else:
+            #non redundant cluster identified, hence simply append
                 centroids.append(centre)
+
+        #convert to point and append to point cloud for future processing
         data_cloud = []
         for cen in centroids:
             centroids_Point = Point32()
