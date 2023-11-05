@@ -17,9 +17,9 @@ class LaserScanNode(Node):
         super().__init__('laser_scan_node')
         self.frame_id = 0
         self.laser_scan_subscriber = self.create_subscription(LaserScan, 'scan', self.laser_scan_callback, 10)
-        self.intermediate_publisher = self.create_publisher(PointCloud, 'intermediate_point_cloud', 10)
-        self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 10)
-        self.human_index_publisher = self.create_publisher(Int64, 'people_number', 10)
+        self.intermediate_publisher = self.create_publisher(PointCloud, 'intermediate_point_cloud', 20)
+        self.centroid_publisher = self.create_publisher(PointCloud, 'centroid', 20)
+        self.human_index_publisher = self.create_publisher(Int64, 'people_number', 20)
         
         self.object_id_counter = 0
         self.tracked_objects = {}
