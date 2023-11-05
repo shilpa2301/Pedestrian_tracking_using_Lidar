@@ -9,15 +9,16 @@ from sklearn.neighbors import KDTree
 THRESHOLD_CENTROIDS = 1
 THRESHOLD_RADIUS_KDTREE = 0.5
 THRESHOLD_OBJECT_DISTANCE = 1
+IGNORE_DISTANCE=0.5
+INITIAL_FRAMES=5
 class LaserScanNode(Node):
     def __init__(self):
         super().__init__('laser_scan_node')
         self.laser_scan_subscriber = self.create_subscription(LaserScan, 'scan', self.laser_scan_callback, 10)
         self.intermediate_publisher = self.create_publisher(PointCloud, 'intermediate_point_cloud', 20)
         self.initial_frames = []
-        self.ignore_distance = 0.5
     def laser_scan_callback(self, scan):
-        if len(self.initial_frames) < 5:
+        if len(self.initial_frames) < INITIAL_FRAMES:
             self.initial_frames.append(scan)
         else:
             intermediate_msg = self.laser_scan_to_intermediate(scan)
@@ -37,7 +38,7 @@ class LaserScanNode(Node):
                     init_x = initial_frame.ranges[j] * math.cos(angle)
                     init_y = initial_frame.ranges[j] * math.sin(angle)
                     distance = math.sqrt((x - init_x) ** 2 + (y - init_y) ** 2)
-                    if distance <= self.ignore_distance:
+                    if distance <= IGNORE_DISTANCE:
                         ignore_point = True
                         break
                 if ignore_point:
