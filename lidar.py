@@ -83,7 +83,11 @@ class PointCloudNode(Node):
     def intermediate_callback(self, msg):
         processed_msg = self.process_data(msg)
         self.centroid_publisher.publish(processed_msg)
-        cluster_data = np.array([[point.x, point.y] for point in processed_msg.points])
+        self.human_index_publisher.publish(self.track_obj(processed_msg))
+        
+    def track_obj(self,processed_msg):
+        cluster_data= np.array([[point.x, point.y] for point in processed_msg.points])
+        
         for i in range(len(cluster_data)):
             object_id = self.assign_object_id(cluster_data[i])
             if object_id > self.human_index:
@@ -91,9 +95,10 @@ class PointCloudNode(Node):
             self.get_logger().info(f"Object ID: {object_id}")
             human_index_msg=Int64()
             human_index_msg.data=self.human_index
-            self.human_index_publisher.publish(human_index_msg)
+            
             if object_id in self.tracked_objects:
                 self.tracked_objects[object_id] = cluster_data[i]
+        return human_index_msg
                 
     def assign_object_id(self, position):
         for obj_id, obj_position in self.tracked_objects.items():
