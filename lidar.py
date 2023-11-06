@@ -15,12 +15,11 @@ import math
 from sklearn.neighbors import KDTree
 
 #Global parameters that should be considered in order to get promising results
-THRESHOLD_CENTROIDS = 1.0
+THRESHOLD_CENTROIDS = 1
 THRESHOLD_RADIUS_KDTREE = 0.5
-THRESHOLD_OBJECT_DISTANCE = 1.8
+THRESHOLD_OBJECT_DISTANCE = 0.8
 THRESHOLD_IGNORE_DISTANCE=0.7
-INITIAL_FRAMES_TO_CONSDIER=3
-
+YOUR_DIRECTION_CHANGE_THRESHOLD=0.5
 # The first node receives the laserscan data and filter outs the static data and transforms them into point cloud data.
 class LaserScanNode(Node):
     def __init__(self):
@@ -31,10 +30,12 @@ class LaserScanNode(Node):
         self.intermediate_publisher = self.create_publisher(PointCloud, 'intermediate_point_cloud', 50)
         #The initial frames which would be considered is a list type.
         self.initial_frames = []
-
+         # Dictionary to track data frame counts
+        self.data_frame_counts = {}
+        self.last_frame=[]
     def laser_scan_callback(self, scan):
         #We would consider if the initial_frames has a smaller length than the intended length of initial frames to consider
-        if len(self.initial_frames) < INITIAL_FRAMES_TO_CONSDIER:
+        if len(self.initial_frames) < 4:
             # Append the scan data into the initial_frames
             self.initial_frames.append(scan)
         else:
@@ -45,9 +46,46 @@ class LaserScanNode(Node):
             # If there are no points at all, just end the function
             if len(filtered_msg.points) == 0:
                 return
-            # Publish the filtered message and Node_2 will receive
-            self.intermediate_publisher.publish(filtered_msg)   
-    
+            # Use the last two frames in order to get rid of the jitter data
+            self.last_frame.append(filtered_msg)
+            # If it did not have at least 2 frames, return
+            if len(self.last_frame)<2:
+                return
+            else:
+                # Use the jitter filter
+                jitter_msg=self.jitter_filter(filtered_msg)
+                # After the filtering, pop the previous data
+                self.last_frame.pop(0)
+                if len(jitter_msg.points)==0:
+                    return
+                # Publish the filtered message and Node_2 will receive
+                self.intermediate_publisher.publish(jitter_msg)  
+
+            
+
+    # The function to filter out jitter data            
+    def jitter_filter(self, point_cloud):
+        filtered_points=[]
+        previous_frame = self.last_frame[0]
+        for i in range(len(point_cloud.points)):
+            x = point_cloud.points[i].x
+            y = point_cloud.points[i].y
+            ignore_point = True
+            for j in range(len(previous_frame.points)):
+                init_x = previous_frame.points[j].x
+                init_y = previous_frame.points[j].y
+                distance = math.sqrt((x - init_x) ** 2 + (y - init_y) ** 2)
+                # If the distance is below the ignore_threshold, we would not ignore the data
+                if distance <1:
+                    ignore_point = False
+                
+            if not ignore_point:
+                filtered_points.append(point_cloud.points[i])
+
+        distance_filtered_msg = PointCloud()
+        distance_filtered_msg.header = point_cloud.header
+        distance_filtered_msg.points = filtered_points
+        return distance_filtered_msg
     # A function that transforms laser data into point_cloud data
     def laser_scan_to_intermediate(self, scan):
         point_cloud_data = []
@@ -71,7 +109,7 @@ class LaserScanNode(Node):
         point_cloud_msg.points = point_cloud_data
         return point_cloud_msg
     
-    # A function to filter out the static objects based on distance       
+    # A function to filter out the static objects           
     def distance_filter(self, point_cloud):
         filtered_points = []
         for i in range(len(point_cloud.points)):
@@ -92,13 +130,12 @@ class LaserScanNode(Node):
                 if ignore_point:
                     break
             if not ignore_point:
-                # If the distance is over the ignore_threshold, we add it to the filtered_point_cloud
-                filtered_points.append(point_cloud.points[i])
+                    filtered_points.append(point_cloud.points[i])
         distance_filtered_msg = PointCloud()
         distance_filtered_msg.header = point_cloud.header
         distance_filtered_msg.points = filtered_points
         return distance_filtered_msg
-
+    
 # The second node receives the filtered data and make cluster centroids. Also tracks objects and count the numbers.
 class PointCloudNode(Node):
     def __init__(self):
@@ -122,16 +159,15 @@ class PointCloudNode(Node):
         self.centroid_publisher.publish(clustered_msg)
         # Publish the number of people after the tracking function.
         self.human_index_publisher.publish(self.track_obj(clustered_msg))
-    
+
     # The tracking function
     def track_obj(self,processed_msg):
         cluster_data= np.array([[point.x, point.y] for point in processed_msg.points])
-        
         for i in range(len(cluster_data)):
             # If the cluster data is close to the previous cluster, we assume it's a previous object.
             # If the cluster data is far enough, we assume it's a new object.
             object_id = self.assign_object_id(cluster_data[i])
-            
+            print(object_id)
             # Updating the total number of tracked people.
             if object_id > self.human_index:
                 self.human_index = object_id
@@ -147,9 +183,15 @@ class PointCloudNode(Node):
     def assign_object_id(self, position):
         for obj_id, obj_position in self.tracked_objects.items():
             dist = np.sqrt((position[0] - obj_position[0]) ** 2 + (position[1] - obj_position[1]) ** 2)
+            print(obj_id,obj_position,dist)
             if dist < THRESHOLD_OBJECT_DISTANCE:
-                return obj_id
-        
+                # Check the direction change as well
+                prev_direction = np.arctan2(obj_position[1], obj_position[0])
+                current_direction = np.arctan2(position[1], position[0])
+                direction_change = np.abs(current_direction - prev_direction)
+                print(obj_id,obj_position,direction_change)
+                if direction_change < YOUR_DIRECTION_CHANGE_THRESHOLD:
+                    return obj_id
         # If it's above the threshold, increase the number.
         self.object_id_counter += 1
         # Also, add the coordinates in the tracked_objects.
@@ -223,7 +265,6 @@ class PointCloudNode(Node):
         point_cloud_msg_.header = point_cloud_msg.header
         point_cloud_msg_.points = data_cloud
         return point_cloud_msg_
-
 # Since we only have one python file, we used two main functions.
 # The first one is for execution 1 and the other is for execution 2.
 def main(args=None):
