@@ -19,7 +19,8 @@ THRESHOLD_CENTROIDS = 1
 THRESHOLD_RADIUS_KDTREE = 0.5
 THRESHOLD_OBJECT_DISTANCE = 0.8
 THRESHOLD_IGNORE_DISTANCE=0.7
-YOUR_DIRECTION_CHANGE_THRESHOLD=0.5
+THRESHOLD_ORIENTATION=0.5
+THRESHOLD_JITTER=1
 # The first node receives the laserscan data and filter outs the static data and transforms them into point cloud data.
 class LaserScanNode(Node):
     def __init__(self):
@@ -97,7 +98,7 @@ class LaserScanNode(Node):
                 init_y = previous_frame.points[j].y
                 distance = math.sqrt((x - init_x) ** 2 + (y - init_y) ** 2)
                 # If the distance is below the ignore_threshold, we would not ignore the data
-                if distance <1:
+                if distance <THRESHOLD_JITTER:
                     ignore_point = False
                 
             if not ignore_point:
@@ -191,7 +192,7 @@ class PointCloudNode(Node):
                 direction_change = np.abs(current_direction - prev_direction)
                 print(obj_id,obj_position,direction_change)
                 # If it is following the similar direction, it's the same object
-                if direction_change < YOUR_DIRECTION_CHANGE_THRESHOLD:
+                if direction_change < THRESHOLD_ORIENTATION:
                     return obj_id
         # If it's above the threshold, increase the number.
         self.object_id_counter += 1
