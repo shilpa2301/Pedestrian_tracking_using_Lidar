@@ -61,7 +61,28 @@ class LaserScanNode(Node):
                 # Publish the filtered message and Node_2 will receive
                 self.intermediate_publisher.publish(jitter_msg)  
 
-            
+    # A function that transforms laser data into point_cloud data
+    def laser_scan_to_intermediate(self, scan):
+        point_cloud_data = []
+        for i in range(len(scan.ranges)):
+            angle = scan.angle_min + i * scan.angle_increment
+            x = scan.ranges[i] * math.cos(angle)
+            y = scan.ranges[i] * math.sin(angle)
+            z = 0.0
+            point32 = Point32()
+            point32.x = x
+            point32.y = y
+            point32.z = z
+            # If the values are 'inf' '-inf' 'Nan' which can not be uesed, we did not use them at all.
+            if ((point32.x != float('inf') and point32.x != float('-inf') and not np.isnan(point32.x)) and
+                (point32.y != float('inf') and point32.y != float('-inf') and not np.isnan(point32.y)) and
+                not np.isnan(point32.z)):
+                point_cloud_data.append(point32) 
+        point_cloud_msg = PointCloud()
+        # Get the same frame_id as scan
+        point_cloud_msg.header = scan.header
+        point_cloud_msg.points = point_cloud_data
+        return point_cloud_msg           
 
     # The function to filter out jitter data            
     def jitter_filter(self, point_cloud):
@@ -86,28 +107,7 @@ class LaserScanNode(Node):
         distance_filtered_msg.header = point_cloud.header
         distance_filtered_msg.points = filtered_points
         return distance_filtered_msg
-    # A function that transforms laser data into point_cloud data
-    def laser_scan_to_intermediate(self, scan):
-        point_cloud_data = []
-        for i in range(len(scan.ranges)):
-            angle = scan.angle_min + i * scan.angle_increment
-            x = scan.ranges[i] * math.cos(angle)
-            y = scan.ranges[i] * math.sin(angle)
-            z = 0.0
-            point32 = Point32()
-            point32.x = x
-            point32.y = y
-            point32.z = z
-            # If the values are 'inf' '-inf' 'Nan' which can not be uesed, we did not use them at all.
-            if ((point32.x != float('inf') and point32.x != float('-inf') and not np.isnan(point32.x)) and
-                (point32.y != float('inf') and point32.y != float('-inf') and not np.isnan(point32.y)) and
-                not np.isnan(point32.z)):
-                point_cloud_data.append(point32) 
-        point_cloud_msg = PointCloud()
-        # Get the same frame_id as scan
-        point_cloud_msg.header = scan.header
-        point_cloud_msg.points = point_cloud_data
-        return point_cloud_msg
+
     
     # A function to filter out the static objects           
     def distance_filter(self, point_cloud):
@@ -190,6 +190,7 @@ class PointCloudNode(Node):
                 current_direction = np.arctan2(position[1], position[0])
                 direction_change = np.abs(current_direction - prev_direction)
                 print(obj_id,obj_position,direction_change)
+                # If it is following the similar direction, it's the same object
                 if direction_change < YOUR_DIRECTION_CHANGE_THRESHOLD:
                     return obj_id
         # If it's above the threshold, increase the number.
